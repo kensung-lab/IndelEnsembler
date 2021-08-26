@@ -89,7 +89,7 @@ $ ./filter /path/to/working/directory
 
 
 ### Download and Usage
-Installing IndelEnsembler is very much easy. You can download and uncompress the IndelEnsembler package using wget or through git.
+Installing IndelEnsembler is easy. You can download and uncompress the IndelEnsembler package using wget or through git.
 
 
 
@@ -98,11 +98,10 @@ Installing IndelEnsembler is very much easy. You can download and uncompress the
 $ wget https://github.com/kensung-lab/IndelEnsembler/archive/refs/heads/main.zip
 or
 $ git clone https://github.com/kensung-lab/IndelEnsembler.git
+$ ./build.sh
 # Usage
 $ cd IndelEnsembler
 $ vi pipeline.sh
 # Change the path of ref_genome and repeats
 $ bash pipeline.sh /path/to/manta/result /path/to/lumpy/result /path/to/survindel/result /path/to/transurveyor/result /an/empty/working/directory 200
 ```
-### Notes
-IndelEnsembler is a very young software, and it has only been used by its authours on a handful of datasets. If you should encounter problems, please write to e0011356@u.nus.edu ; we will do our best to both improve/fix both the software and the documentation.
