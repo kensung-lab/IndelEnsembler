@@ -87,6 +87,29 @@ $ python surveyor.py /path/to/bamfile /an/empty/working/directory	/path/to/refer
 $ ./filter /path/to/working/directory
 ```
 
+### Clustering
+In order to run clustering, we need all the calls from all the samples in a single file (order does not matter). For example, if we are running three samples with 1000 SV each, we need a file with 3000 SVs. Each line should appear as in the original calls, but the sample name should be appended in the end.
+
+For example, suppose we have 2 samples (S1 and S2), with one call each
+
+S1:
+SV_1 chr1 100 + chr1 200 - DEL NA 
+
+S2:
+SV_1 chr1 120 + chr1 210 - DEL NA 
+
+We need to create a file (e.g. all.sv) with two lines
+
+SV_1 chr1 100 + chr1 200 - DEL NA S1
+SV_1 chr1 120 + chr1 210 - DEL NA S2
+
+After that, we can run clustering as follows:
+
+./clusterer all.sv MAX_DIST MIN_OVERLAP
+
+MAX_DIST and MIN_OVERLAP are the maximum distance between breakpoints (in bp) and minimum overlap, respectively, for two SVs to be potentially part of the same cluster. 200 and 0 were used in the manuscript.
+
+If the clustering process should be too slow, the file can be divided by by SV type and by chromosome, and each subfile can be run individually.
 
 ### Download and Usage
 Installing IndelEnsembler is easy. You can download and uncompress the IndelEnsembler package using wget or through git.
