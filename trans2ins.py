@@ -1,43 +1,62 @@
 from __future__ import print_function
 import sys, pyfaidx
-from collections import defaultdict
 
 results = sys.stdin.readlines()
 fasta = pyfaidx.Fasta(sys.argv[1])
 
 complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A', 'N': 'N'}
 def reverse_complement(seq):
-	bases = list(seq)
-	bases = reversed([complement.get(base,base) for base in bases])
-	bases = ''.join(bases)
-	return bases
+    bases = list(seq)
+    bases = reversed([complement.get(base,base) for base in bases])
+    bases = ''.join(bases)
+    return bases
 
-ids = set()
-both_sides_ids = set()
+class tra_bkp_t:
+    def __init__(self, line):
+        sl = line.split()
+        self.id = sl[0]
+        self.dest_chr, self.src_chr = sl[1], sl[4]
+        self.dst_pos, self.src_pos = int(sl[2]), int(sl[5])
+        self.dst_str, self.src_str = sl[3], sl[6]
+        self.precision = sl[8]
+
+    def is_rc(self):
+        return self.src_str == self.dst_str
+
+
+fwd_calls, rev_calls = dict(), dict()
 for line in results:
-	id = line.split()[0]
-	if id in ids:
-		both_sides_ids.add(id)
-	else:
-		ids.add(id)
+    bp = tra_bkp_t(line)
+    if bp.dst_str == '+':
+        fwd_calls[bp.id] = bp
+    else:
+        rev_calls[bp.id] = bp
 
-paired_calls = defaultdict(list)
-for line in results:
-	sl = line.split()
-	if sl[0] in both_sides_ids:
-		paired_calls[sl[0]].append(sl[1:])
+for id in fwd_calls:
+    if id not in rev_calls: continue
 
-for id in paired_calls:
-	call1, call2 = paired_calls[id]
+    fwd_call, rev_call = fwd_calls[id], rev_calls[id]
 
-	dst_chr, dst_start, dst_end = call1[0], int(call1[1]), int(call2[1])
-	if dst_start > dst_end: dst_start, dst_end = dst_end, dst_start
+    dst_chr, dst_fwd_pos, dst_rev_pos = fwd_call.dest_chr, fwd_call.dst_pos, rev_call.dst_pos
+    mh_seq, mh_len = "", 0
+    if dst_fwd_pos > dst_rev_pos:
+        mh_seq = str(fasta[dst_chr][dst_rev_pos:dst_fwd_pos]).upper()
+        mh_len = dst_fwd_pos-dst_rev_pos
+        dst_fwd_pos = dst_rev_pos
 
-	src_chr, src_start, src_end = call1[3], int(call1[4]), int(call2[4])
-	if src_start > src_end: src_start, src_end = src_end, src_start
-	rc = call1[2] == call1[5]
-	seq = str(fasta[src_chr][src_start:src_end])
-	if rc:
-		seq = reverse_complement(seq)
+    src_chr, src_start, src_end = fwd_call.src_chr, fwd_call.src_pos, rev_call.src_pos
+    if src_end-src_start < 50: continue
 
-	print(id, dst_chr, dst_start, "N", dst_chr, dst_end, "N", "INS", seq)
+    seq = str(fasta[src_chr][src_start:src_end]).upper().replace("R", "N").replace("W", "N")
+    if fwd_call.is_rc():
+        seq = reverse_complement(seq)
+    seq = mh_seq + seq
+
+    precision = "IMPRECISE"
+    if fwd_call.precision == "PRECISE" and rev_call.precision == "PRECISE":
+        precision = "PRECISE"
+
+    info = "MH_LEN=%d" % (mh_len)
+
+    if len(seq) < 50 or dst_rev_pos-dst_fwd_pos >= len(seq): continue
+    print(id, dst_chr, dst_fwd_pos, "N", dst_chr, dst_rev_pos, "N", "INS", seq, precision, info)
